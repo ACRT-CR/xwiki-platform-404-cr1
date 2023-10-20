@@ -27,6 +27,7 @@ import javax.inject.Named;
 import javax.inject.Provider;
 import javax.inject.Singleton;
 
+import org.apache.commons.lang3.StringUtils;
 import org.xwiki.component.annotation.Component;
 import org.xwiki.component.manager.ComponentLookupException;
 import org.xwiki.component.manager.ComponentManager;
@@ -130,6 +131,10 @@ public class DefaultObjectRequiredRightAnalyzer implements RequiredRightAnalyzer
         String contentTypeString = textAreaClass.getContentType();
         TextAreaClass.ContentType contentType =
             TextAreaClass.ContentType.getByValue(contentTypeString);
+        if (contentType == null) {
+            // Default to wiki text like TextAreaClass does.
+            contentType = TextAreaClass.ContentType.WIKI_TEXT;
+        }
         PropertyInterface field = object.getField(propertyName);
 
         List<RequiredRightAnalysisResult> result = List.of();
@@ -138,7 +143,7 @@ public class DefaultObjectRequiredRightAnalyzer implements RequiredRightAnalyzer
         if (!textAreaClass.isRestricted() && field instanceof BaseStringProperty) {
             String value = ((BaseStringProperty) field).getValue();
 
-            if (contentType != null) {
+            if (StringUtils.isNotBlank(value)) {
                 switch (contentType) {
                     case VELOCITY_CODE:
                         result = analyzeVelocityScriptValue(value, field.getReference(),
@@ -152,10 +157,10 @@ public class DefaultObjectRequiredRightAnalyzer implements RequiredRightAnalyzer
                             result = analyzeWikiContent(object, value, field.getReference());
                         }
                         break;
-                    case WIKI_TEXT:
-                        result = analyzeWikiContent(object, value, field.getReference());
+                    case PURE_TEXT:
                         break;
                     default:
+                        result = analyzeWikiContent(object, value, field.getReference());
                         break;
                 }
             }
